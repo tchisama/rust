@@ -2,70 +2,102 @@ use colored::*; // For colored terminal output
 use reqwest::Client; // For making HTTP requests
 use serde::{Deserialize, Serialize}; // For JSON serialization/deserialization
 use std::env; // For accessing environment variables and command-line arguments
+use std::process::Command; // For executing shell commands
+use crossterm::{
+    event::{self, KeyCode},
+}; // For handling input and terminal control
 
-// Struct to represent the request payload for the OpenAI API
+// Struct to represent the request payload for OpenAI API
 #[derive(Serialize)]
 struct OpenAIRequest {
-    model: String, // The model to use (e.g., "gpt-4")
-    messages: Vec<Message>, // A list of messages in the conversation
-    response_format: ResponseFormat, // Specify the response format as JSON
+    model: String,
+    messages: Vec<Message>,
+    response_format: ResponseFormat,
 }
 
-// Struct to represent a single message in the conversation
+// Struct to represent a single message
 #[derive(Serialize)]
 struct Message {
-    role: String, // The role of the message sender (e.g., "system" or "user")
-    content: String, // The content of the message
+    role: String,
+    content: String,
 }
 
-// Struct to specify the response format as JSON
+// Struct to specify JSON response format
 #[derive(Serialize)]
 struct ResponseFormat {
     #[serde(rename = "type")]
-    format_type: String, // The type of response format (e.g., "json_object")
+    format_type: String,
 }
 
-// Struct to represent the response from the OpenAI API
+// Struct to represent the OpenAI API response
 #[derive(Deserialize)]
 struct OpenAIResponse {
-    choices: Vec<Choice>, // A list of choices (responses) from the API
+    choices: Vec<Choice>,
 }
 
-// Struct to represent a single choice (response) from the API
+// Struct to represent a single choice (response)
 #[derive(Deserialize)]
 struct Choice {
-    message: MessageResponse, // The message content of the response
+    message: MessageResponse,
 }
 
-// Struct to represent the message content in the API response
+// Struct to represent the message content
 #[derive(Deserialize)]
 struct MessageResponse {
-    content: String, // The text content of the response
+    content: String,
 }
 
-// Struct to represent the structured response from the API
+// Struct for the structured response
 #[derive(Deserialize)]
 struct StructuredResponse {
-    steps: Vec<Step>, // A list of steps in the solution
-    final_answer: String, // The final answer
-    final_command: Option<String>, // The final command to get the answer (optional)
-    emoji: Option<String>, // A random emoji to display with the response (optional)
+    final_command: String,
 }
 
-// Struct to represent a single step in the solution
-#[derive(Deserialize)]
-struct Step {
-    explanation: String, // The explanation for the step
-    output_command: String, // The output of the step
+// Function to display the UI and handle user input
+fn handle_user_input(command: &str) {
+    loop {
+        println!("\n[{}] Run | [{}] Exit", 
+             "R".green(), "E".red());
+
+        if let Ok(true) = event::poll(std::time::Duration::from_secs(10)) {
+            if let Ok(event::Event::Key(key_event)) = event::read() {
+                match key_event.code {
+                    KeyCode::Char('r') | KeyCode::Char('R') => {
+                        println!("\nExecuting command: {}", command.green().bold());
+                        let output = Command::new("sh")
+                            .arg("-c")
+                            .arg(command)
+                            .output();
+
+                        match output {
+                            Ok(result) => {
+                                let stdout = String::from_utf8_lossy(&result.stdout);
+                                if !stdout.is_empty() {
+                                    println!("-----------------");
+                                    println!("{}", stdout);
+                                }
+                            }
+                            Err(e) => eprintln!("Error executing command: {}", e),
+                        }
+                        return;
+                    }
+                    KeyCode::Char('e') | KeyCode::Char('E') => {
+                        println!("\nClosing...");
+                        return;
+                    }
+
+                    _ => continue,
+                }
+            }
+        }
+    }
 }
 
-// The main function, marked as asynchronous with `tokio::main`
+// The main function (async with `tokio`)
 #[tokio::main]
 async fn main() {
-    // Step 1: Get the OpenAI API key from the environment variables
     let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
 
-    // Step 2: Get the question from the command-line arguments
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: shy <question>");
@@ -73,16 +105,14 @@ async fn main() {
     }
     let question = args[1..].join(" ");
 
-    // Step 3: Display a "thinking" message to indicate the app is processing the question
     println!("{}", "Thinking...".yellow());
 
-    // Step 4: Create the request payload for the OpenAI API
     let request = OpenAIRequest {
-        model: "gpt-4o-mini".to_string(), // Use the GPT-4 model
+        model: "gpt-4o-mini".to_string(),
         messages: vec![
             Message {
                 role: "system".to_string(),
-                content: "You are a helpful math tutor. Guide the user through the solution step by step. Respond in JSON format with `steps` (an array of objects with `explanation` and `output_command` fields), a `final_answer` field, and optionally a `final_command` and `emoji` field if applicable.".to_string(),
+                content: "You are a CLI assistant. Only return a JSON object with 'final_command' (string) for the CLI command . Do not include explanations or steps.".to_string(),
             },
             Message {
                 role: "user".to_string(),
@@ -90,11 +120,10 @@ async fn main() {
             },
         ],
         response_format: ResponseFormat {
-            format_type: "json_object".to_string(), // Request the response in JSON format
+            format_type: "json_object".to_string(),
         },
     };
 
-    // Step 5: Send the request to the OpenAI API using the `reqwest` crate
     let client = Client::new();
     let response = client
         .post("https://api.openai.com/v1/chat/completions")
@@ -105,59 +134,26 @@ async fn main() {
         .await
         .expect("Failed to send request");
 
-    // Step 6: Parse the response from the OpenAI API
     if response.status().is_success() {
-        let response_body: OpenAIResponse = response
-            .json()
-            .await
-            .expect("Failed to parse response");
+        let response_body: OpenAIResponse = response.json().await.expect("Failed to parse response");
 
-        // Extract the content of the first response choice
         let content = response_body.choices[0].message.content.trim();
-
-        // Parse the JSON content into a structured response
         let structured_response: StructuredResponse = serde_json::from_str(content)
             .unwrap_or_else(|_| {
-                eprintln!("Failed to parse structured response. Falling back to default.");
+                eprintln!("Failed to parse structured response.");
                 StructuredResponse {
-                    steps: vec![],
-                    final_answer: "No answer provided.".to_string(),
-                    final_command: None,
-                    emoji: None,
+                    final_command: "echo 'Error: No command returned'".to_string(),
                 }
             });
 
-        // Step 7: Display the response with a random face and formatted output
-        let faces = ["(≧◡≦)", "(*^▽^*)", "(◕3◕)", "(^◡^)", "(∪ ◡ ∪)"]; // List of random faces
-        let face = faces[rand::random::<usize>() % faces.len()]; // Pick a random face
+        let faces = ["(≧◡≦)", "(*^▽^*)", "(◕3◕)", "(^◡^)", "(∪ ◡ ∪)", "(✿◠‿◠)", "(◕‿◕✿)", "(◠‿◠✿)", "(◕‿-) ✧", "(◕‿◕)" ];
+        let face = faces[rand::random::<usize>() % faces.len()];
 
-        // Print the steps with explanations and outputs
-        println!("\n {} : Steps to solve the problem:", face.blue().bold());
-        for (i, step) in structured_response.steps.iter().enumerate() {
-            println!(
-                "  {}. {}: {}",
-                i + 1,
-                step.explanation.green(),
-                step.output_command.blue()
-            );
-        }
+        println!("\n {} : {}", face.blue().bold(), structured_response.final_command.green().bold());
 
-        let emoji = structured_response.emoji.unwrap_or("".to_string());
-        let final_command = structured_response.final_command.unwrap_or("".to_string());
-
-        // Print the final answer
-        println!("\n {} {}: {} {}", 
-            face.blue().bold(),
-            emoji,
-            structured_response.final_answer.green().bold(),
-            final_command.blue().bold()
-        );
-
+        handle_user_input(&structured_response.final_command);
     } else {
-        // If the request failed, display the error message from the API
-        eprintln!(
-            "Error: {}",
-            response.text().await.expect("Failed to read error response")
-        );
+        eprintln!("Error: {}", response.text().await.expect("Failed to read error response"));
     }
 }
+
