@@ -1,0 +1,11 @@
+/home/tchisama/github/rust/odoo-automation/target/debug/deps/libyaml_rust-ed4f49b576cdb753.rmeta: /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/lib.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/emitter.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/parser.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/scanner.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/yaml.rs
+
+/home/tchisama/github/rust/odoo-automation/target/debug/deps/libyaml_rust-ed4f49b576cdb753.rlib: /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/lib.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/emitter.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/parser.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/scanner.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/yaml.rs
+
+/home/tchisama/github/rust/odoo-automation/target/debug/deps/yaml_rust-ed4f49b576cdb753.d: /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/lib.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/emitter.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/parser.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/scanner.rs /home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/yaml.rs
+
+/home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/lib.rs:
+/home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/emitter.rs:
+/home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/parser.rs:
+/home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/scanner.rs:
+/home/tchisama/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yaml-rust-0.4.5/src/yaml.rs:

@@ -1,0 +1,9 @@
+[package]
+name = "odoo-automation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dialoguer = "0.10"  # For user input prompts
+serde = { version = "1.0", features = ["derive"] }  # For serialization (optional)
+serde_yaml = "0.8"  # For generating YAML (optional)
