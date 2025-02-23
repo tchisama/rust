@@ -1,9 +1,9 @@
+use dialoguer::{Input, MultiSelect, Select};
+use std::fs::read_dir;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
-use dialoguer::{Input, Select, MultiSelect};
-use std::fs::read_dir;
 
 fn main() {
     // Ask for project name
@@ -34,7 +34,6 @@ fn main() {
         fs::create_dir_all(&path).expect("Failed to create directory");
     }
 
-
     // Getting the port number
 
     let default_port = 8069;
@@ -42,7 +41,6 @@ fn main() {
     // Find an available port
     let available_port = find_available_port(default_port);
     println!("Using port: {}", available_port);
-
 
     // Generate docker-compose.yml
     let docker_compose_content = format!(
@@ -79,7 +77,7 @@ volumes:
   odoo-web-data:
   postgres-data:
 "#,
-        odoo_version,available_port, postgres_version
+        odoo_version, available_port, postgres_version
     );
 
     let docker_compose_path = format!("{}/docker-compose.yml", project_name);
@@ -133,122 +131,117 @@ db_password = odoo
 
     // if no, exit
     if add_addons {
-
-
-    // Clone the repository if it doesn't exist
-    let repo_path = format!("{}/Documents/BBG-ODOO-ADDONS-PACK", std::env::var("HOME").unwrap());
-    if Path::new(&repo_path).exists() {
-        println!("Addons already exists!");
-        //  checkout the correct branch and pull the latest changes
-        let status = Command::new("git")
-            .arg("checkout")
-            .arg(format!("{}.0", odoo_version))
-            .current_dir(&repo_path)
-            .status()
-            .expect("Failed to execute git checkout");
-
-        if status.success() {
-            println!("Switched to branch: {}.0", odoo_version);
-        } else {
-            eprintln!("Failed to switch to branch: {}.0", odoo_version);
-        }
-
-        // chek if want to pull the latest changes
-        let pull_latest: bool = Select::new()
-            .with_prompt("Do you want to pull the latest changes?")
-            .default(0)
-            .items(&["Yes", "No"])
-            .interact()
-            .unwrap()
-            == 0;
-        if pull_latest {
+        // Clone the repository if it doesn't exist
+        let repo_path = format!(
+            "{}/Documents/BBG-ODOO-ADDONS-PACK",
+            std::env::var("HOME").unwrap()
+        );
+        if Path::new(&repo_path).exists() {
+            println!("Addons already exists!");
+            //  checkout the correct branch and pull the latest changes
             let status = Command::new("git")
-                .arg("pull")
+                .arg("checkout")
+                .arg(format!("{}.0", odoo_version))
                 .current_dir(&repo_path)
                 .status()
-                .expect("Failed to execute git pull");
+                .expect("Failed to execute git checkout");
 
             if status.success() {
-                println!("Repository updated successfully!");
+                println!("Switched to branch: {}.0", odoo_version);
             } else {
-                eprintln!("Failed to update repository!");
+                eprintln!("Failed to switch to branch: {}.0", odoo_version);
             }
-        }
 
+            // chek if want to pull the latest changes
+            let pull_latest: bool = Select::new()
+                .with_prompt("Do you want to pull the latest changes?")
+                .default(0)
+                .items(&["Yes", "No"])
+                .interact()
+                .unwrap()
+                == 0;
+            if pull_latest {
+                let status = Command::new("git")
+                    .arg("pull")
+                    .current_dir(&repo_path)
+                    .status()
+                    .expect("Failed to execute git pull");
 
-    } else {
-        println!("Cloning Bigbang Odoo Addons Pack repository...");
-
-        // Clone the repository
-        let status = Command::new("git")
-            .arg("clone")
-            .arg("https://github.com/bbgstack/BBG-ODOO-ADDONS-PACK")
-            .arg(&repo_path)
-            .arg("--depth")
-            .arg("1")
-            .arg("--branch")
-            .arg(format!("{}.0", odoo_version))
-            .status()
-            .expect("Failed to execute git clone");
-
-        if status.success() {
-            println!("Repository cloned successfully!");
+                if status.success() {
+                    println!("Repository updated successfully!");
+                } else {
+                    eprintln!("Failed to update repository!");
+                }
+            }
         } else {
-            eprintln!("Failed to clone repository!");
+            println!("Cloning Bigbang Odoo Addons Pack repository...");
+
+            // Clone the repository
+            let status = Command::new("git")
+                .arg("clone")
+                .arg("https://github.com/bbgstack/BBG-ODOO-ADDONS-PACK")
+                .arg(&repo_path)
+                .arg("--depth")
+                .arg("1")
+                .arg("--branch")
+                .arg(format!("{}.0", odoo_version))
+                .status()
+                .expect("Failed to execute git clone");
+
+            if status.success() {
+                println!("Repository cloned successfully!");
+            } else {
+                eprintln!("Failed to clone repository!");
+            }
+        }
+
+        // list all the addons
+        // make an array of all the selected addons
+
+        // List all addons in the repository
+        let addons: Vec<String> = read_dir(&repo_path)
+            .expect("Failed to read repository directory")
+            .filter_map(|entry| {
+                let entry = entry.expect("Failed to read entry");
+                let path = entry.path();
+                if path.is_dir() {
+                    Some(path.file_name().unwrap().to_string_lossy().into_owned())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if addons.is_empty() {
+            println!("No addons found in the repository!");
+            return;
+        }
+
+        // Multi-select prompt for addons
+        let selected_addons: Vec<usize> = MultiSelect::new()
+            .with_prompt("Select addons to include in your project")
+            .items(&addons)
+            .interact()
+            .expect("Failed to select addons");
+
+        // Copy selected addons to custom_addons folder
+        for index in selected_addons {
+            let addon_name = &addons[index];
+            let src = format!("{}/{}", repo_path, addon_name);
+            let dest = format!("{}/custom_addons", project_name); // Destination is always custom_addons
+
+            // Copy directory or group
+            copy_dir_all(&src, &dest).expect("Failed to copy addon");
+            println!("Copied addon: {}", addon_name);
         }
     }
-
-
-    // list all the addons
-    // make an array of all the selected addons
-
-
-    
-    // List all addons in the repository
-    let addons: Vec<String> = read_dir(&repo_path)
-        .expect("Failed to read repository directory")
-        .filter_map(|entry| {
-            let entry = entry.expect("Failed to read entry");
-            let path = entry.path();
-            if path.is_dir() {
-                Some(path.file_name().unwrap().to_string_lossy().into_owned())
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    if addons.is_empty() {
-        println!("No addons found in the repository!");
-        return;
-    }
-
-    // Multi-select prompt for addons
-    let selected_addons: Vec<usize> = MultiSelect::new()
-        .with_prompt("Select addons to include in your project")
-        .items(&addons)
-        .interact()
-        .expect("Failed to select addons");
-
-    // Copy selected addons to custom_addons folder
-    for index in selected_addons {
-        let addon_name = &addons[index];
-        let src = format!("{}/{}", repo_path, addon_name);
-        let dest = format!("{}/custom_addons", project_name); // Destination is always custom_addons
-
-        // Copy directory or group
-        copy_dir_all(&src, &dest).expect("Failed to copy addon");
-        println!("Copied addon: {}", addon_name);
-    }
-
-    }
-
 
     println!(
         "Project '{}' with Odoo {}  has been created successfully!",
-        project_name, odoo_version    );
+        project_name, odoo_version
+    );
 
-    // check if you want to start docker compose 
+    // check if you want to start docker compose
     let start_docker: bool = Select::new()
         .with_prompt("Do you want to start the docker-compose?")
         .default(0)
@@ -288,7 +281,10 @@ fn is_port_in_use(port: u16) -> bool {
         }
         Err(_) => {
             // If the command fails (e.g., `ss` is not installed), assume the port is available
-            println!("Warning: 'ss' command failed. Assuming port {} is available.", port);
+            println!(
+                "Warning: 'ss' command failed. Assuming port {} is available.",
+                port
+            );
             false
         }
     }
@@ -298,17 +294,15 @@ fn is_port_in_use(port: u16) -> bool {
 fn find_available_port(start_port: u16) -> u16 {
     let mut port = start_port;
     while is_port_in_use(port) {
-        println!("Port {} is already in use. Trying port {}...", port, port + 1);
+        println!(
+            "Port {} is already in use. Trying port {}...",
+            port,
+            port + 1
+        );
         port += 1;
     }
     port
 }
-
-
-
-
-
-
 
 // Helper function to copy directories or groups
 fn copy_dir_all(src: &str, dst: &str) -> std::io::Result<()> {
@@ -322,7 +316,11 @@ fn copy_dir_all(src: &str, dst: &str) -> std::io::Result<()> {
         // If __manifest__.py exists, treat it as a single addon
         println!("Copying single addon: {}", src);
 
-        let dest_path = format!("{}/{}", dst, Path::new(src).file_name().unwrap().to_string_lossy());
+        let dest_path = format!(
+            "{}/{}",
+            dst,
+            Path::new(src).file_name().unwrap().to_string_lossy()
+        );
         // Copy the entire directory as-is to custom_addons
         copy_dir_contents(src, &dest_path)?;
     } else {
@@ -351,8 +349,6 @@ fn copy_dir_all(src: &str, dst: &str) -> std::io::Result<()> {
 
     Ok(())
 }
-
-
 
 // Helper function to copy all contents of a directory
 fn copy_dir_contents(src: &str, dst: &str) -> std::io::Result<()> {

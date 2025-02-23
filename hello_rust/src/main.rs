@@ -1,5 +1,5 @@
-use std::io;
 use colored::*;
+use std::io;
 
 fn main() {
     println!("{}", "What's your name?".green());
