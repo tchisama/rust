@@ -86,7 +86,7 @@ fn handle_user_input(command: &str) {
         }
     }
 }
-// The main function (async with `tokio`)
+// The main function (async with tokio)
 #[tokio::main]
 async fn main() {
     let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");

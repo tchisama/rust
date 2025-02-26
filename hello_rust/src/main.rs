@@ -12,3 +12,4 @@ fn main() {
     let name = name.trim();
     println!("Hello, {}! Welcome to Rust.", name.blue().bold());
 }
+

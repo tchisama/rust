@@ -64,6 +64,7 @@ fn main() -> io::Result<()> {
         .stdin(std::process::Stdio::piped())
         .spawn()?;
 
+
     clipboard.stdin.as_mut().unwrap().write_all(contents.as_bytes())?;
 
     println!("The contents of {} have been copied to the clipboard.", selected_file);
