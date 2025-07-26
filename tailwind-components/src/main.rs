@@ -13,7 +13,7 @@ fn main() -> io::Result<()> {
 
     let component_url = &args[1];
     let component_name = extract_component_name(component_url);
-    let base_dir = get_executable_dir(); // Get the directory of the executable
+    let base_dir = "/home/tchisama/github/rust/tailwind-components/src/tailwind-components/"
 
     let component_dir = base_dir.join("components").join("react").join("components")
         .join("application-ui").join(&component_name);
